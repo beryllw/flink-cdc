@@ -63,4 +63,8 @@ public class FlinkEnvironmentUtils {
         SavepointRestoreSettings.toConfiguration(savepointSettings, configuration);
         return FlinkPipelineComposer.ofRemoteCluster(configuration, additionalJars);
     }
+
+    public static FlinkPipelineComposer createYarnComposer() {
+        return FlinkPipelineComposer.ofYarnCluster();
+    }
 }
