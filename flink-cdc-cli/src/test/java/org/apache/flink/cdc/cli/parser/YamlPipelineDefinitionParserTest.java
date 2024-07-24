@@ -77,7 +77,6 @@ class YamlPipelineDefinitionParserTest {
                         Configuration.fromMap(
                                 ImmutableMap.<String, String>builder()
                                         .put("parallelism", "1")
-                                        .put("foo", "bar")
                                         .build()));
         assertThat(pipelineDef).isEqualTo(fullDefWithGlobalConf);
     }
@@ -167,6 +166,15 @@ class YamlPipelineDefinitionParserTest {
                                 + "Or use 'UTC' without time zone and daylight saving time.");
     }
 
+    @Test
+    void testRouteWithReplacementSymbol() throws Exception {
+        URL resource =
+                Resources.getResource("definitions/pipeline-definition-full-with-repsym.yaml");
+        YamlPipelineDefinitionParser parser = new YamlPipelineDefinitionParser();
+        PipelineDef pipelineDef = parser.parse(Paths.get(resource.toURI()), new Configuration());
+        assertThat(pipelineDef).isEqualTo(fullDefWithRouteRepSym);
+    }
+
     private final PipelineDef fullDef =
             new PipelineDef(
                     new SourceDef(
@@ -198,10 +206,12 @@ class YamlPipelineDefinitionParserTest {
                             new RouteDef(
                                     "mydb.default.app_order_.*",
                                     "odsdb.default.app_order",
+                                    null,
                                     "sync all sharding tables to one"),
                             new RouteDef(
                                     "mydb.default.web_order",
                                     "odsdb.default.ods_web_order",
+                                    null,
                                     "sync table to with given prefix ods_")),
                     Arrays.asList(
                             new TransformDef(
@@ -224,7 +234,7 @@ class YamlPipelineDefinitionParserTest {
                             ImmutableMap.<String, String>builder()
                                     .put("name", "source-database-sync-pipe")
                                     .put("parallelism", "4")
-                                    .put("enable-schema-evolution", "false")
+                                    .put("schema.change.behavior", "evolve")
                                     .put("schema-operator.rpc-timeout", "1 h")
                                     .build()));
 
@@ -259,10 +269,12 @@ class YamlPipelineDefinitionParserTest {
                             new RouteDef(
                                     "mydb.default.app_order_.*",
                                     "odsdb.default.app_order",
+                                    null,
                                     "sync all sharding tables to one"),
                             new RouteDef(
                                     "mydb.default.web_order",
                                     "odsdb.default.ods_web_order",
+                                    null,
                                     "sync table to with given prefix ods_")),
                     Arrays.asList(
                             new TransformDef(
@@ -285,9 +297,8 @@ class YamlPipelineDefinitionParserTest {
                             ImmutableMap.<String, String>builder()
                                     .put("name", "source-database-sync-pipe")
                                     .put("parallelism", "4")
-                                    .put("enable-schema-evolution", "false")
+                                    .put("schema.change.behavior", "evolve")
                                     .put("schema-operator.rpc-timeout", "1 h")
-                                    .put("foo", "bar")
                                     .build()));
 
     private final PipelineDef defWithOptional =
@@ -314,7 +325,10 @@ class YamlPipelineDefinitionParserTest {
                                             .build())),
                     Collections.singletonList(
                             new RouteDef(
-                                    "mydb.default.app_order_.*", "odsdb.default.app_order", null)),
+                                    "mydb.default.app_order_.*",
+                                    "odsdb.default.app_order",
+                                    null,
+                                    null)),
                     Collections.emptyList(),
                     Configuration.fromMap(
                             ImmutableMap.<String, String>builder()
@@ -327,5 +341,68 @@ class YamlPipelineDefinitionParserTest {
                     new SinkDef("kafka", null, new Configuration()),
                     Collections.emptyList(),
                     Collections.emptyList(),
-                    new Configuration());
+                    Configuration.fromMap(Collections.singletonMap("parallelism", "1")));
+
+    private final PipelineDef fullDefWithRouteRepSym =
+            new PipelineDef(
+                    new SourceDef(
+                            "mysql",
+                            "source-database",
+                            Configuration.fromMap(
+                                    ImmutableMap.<String, String>builder()
+                                            .put("host", "localhost")
+                                            .put("port", "3306")
+                                            .put("username", "admin")
+                                            .put("password", "pass")
+                                            .put(
+                                                    "tables",
+                                                    "adb.*, bdb.user_table_[0-9]+, [app|web]_order_.*")
+                                            .put(
+                                                    "chunk-column",
+                                                    "app_order_.*:id,web_order:product_id")
+                                            .put("capture-new-tables", "true")
+                                            .build())),
+                    new SinkDef(
+                            "kafka",
+                            "sink-queue",
+                            Configuration.fromMap(
+                                    ImmutableMap.<String, String>builder()
+                                            .put("bootstrap-servers", "localhost:9092")
+                                            .put("auto-create-table", "true")
+                                            .build())),
+                    Arrays.asList(
+                            new RouteDef(
+                                    "mydb.default.app_order_.*",
+                                    "odsdb.default.app_order_<>",
+                                    "<>",
+                                    "sync all sharding tables to one"),
+                            new RouteDef(
+                                    "mydb.default.web_order",
+                                    "odsdb.default.ods_web_order_>_<",
+                                    ">_<",
+                                    "sync table to with given prefix ods_")),
+                    Arrays.asList(
+                            new TransformDef(
+                                    "mydb.app_order_.*",
+                                    "id, order_id, TO_UPPER(product_name)",
+                                    "id > 10 AND order_id > 100",
+                                    "id",
+                                    "product_name",
+                                    "comment=app order",
+                                    "project fields from source table"),
+                            new TransformDef(
+                                    "mydb.web_order_.*",
+                                    "CONCAT(id, order_id) as uniq_id, *",
+                                    "uniq_id > 10",
+                                    null,
+                                    null,
+                                    null,
+                                    "add new uniq_id for each row")),
+                    Configuration.fromMap(
+                            ImmutableMap.<String, String>builder()
+                                    .put("name", "source-database-sync-pipe")
+                                    .put("parallelism", "4")
+                                    .put("schema.change.behavior", "evolve")
+                                    .put("schema-operator.rpc-timeout", "1 h")
+                                    .build()));
 }

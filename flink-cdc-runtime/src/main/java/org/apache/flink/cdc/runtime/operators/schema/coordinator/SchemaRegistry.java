@@ -17,9 +17,8 @@
 
 package org.apache.flink.cdc.runtime.operators.schema.coordinator;
 
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.cdc.common.event.TableId;
-import org.apache.flink.cdc.common.schema.Selectors;
+import org.apache.flink.cdc.common.route.RouteRule;
 import org.apache.flink.cdc.common.sink.MetadataApplier;
 import org.apache.flink.cdc.runtime.operators.schema.SchemaOperator;
 import org.apache.flink.cdc.runtime.operators.schema.event.FlushSuccessEvent;
@@ -46,6 +45,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +89,7 @@ public class SchemaRegistry implements OperatorCoordinator, CoordinationRequestH
     /** Metadata applier for applying schema changes to external system. */
     private final MetadataApplier metadataApplier;
 
-    private final List<Tuple2<Selectors, TableId>> routes;
+    private final List<RouteRule> routes;
 
     /** The request handler that handle all requests and events. */
     private SchemaRegistryRequestHandler requestHandler;
@@ -102,7 +103,7 @@ public class SchemaRegistry implements OperatorCoordinator, CoordinationRequestH
             String operatorName,
             OperatorCoordinator.Context context,
             MetadataApplier metadataApplier,
-            List<Tuple2<Selectors, TableId>> routes) {
+            List<RouteRule> routes) {
         this.context = context;
         this.operatorName = operatorName;
         this.failedReasons = new HashMap<>();
@@ -196,18 +197,43 @@ public class SchemaRegistry implements OperatorCoordinator, CoordinationRequestH
         try (ByteArrayInputStream bais = new ByteArrayInputStream(checkpointData);
                 DataInputStream in = new DataInputStream(bais)) {
             int schemaManagerSerializerVersion = in.readInt();
-            int length = in.readInt();
-            byte[] serializedSchemaManager = new byte[length];
-            in.readFully(serializedSchemaManager);
-            schemaManager =
-                    SchemaManager.SERIALIZER.deserialize(
-                            schemaManagerSerializerVersion, serializedSchemaManager);
-            Map<TableId, Set<TableId>> derivationMapping =
-                    SchemaDerivation.deserializerDerivationMapping(in);
-            schemaDerivation = new SchemaDerivation(schemaManager, routes, derivationMapping);
-            requestHandler =
-                    new SchemaRegistryRequestHandler(
-                            metadataApplier, schemaManager, schemaDerivation);
+            switch (schemaManagerSerializerVersion) {
+                case 0:
+                    {
+                        int length = in.readInt();
+                        byte[] serializedSchemaManager = new byte[length];
+                        in.readFully(serializedSchemaManager);
+                        schemaManager =
+                                SchemaManager.SERIALIZER.deserialize(
+                                        schemaManagerSerializerVersion, serializedSchemaManager);
+                        schemaDerivation =
+                                new SchemaDerivation(schemaManager, routes, Collections.emptyMap());
+                        requestHandler =
+                                new SchemaRegistryRequestHandler(
+                                        metadataApplier, schemaManager, schemaDerivation);
+                        break;
+                    }
+                case 1:
+                    {
+                        int length = in.readInt();
+                        byte[] serializedSchemaManager = new byte[length];
+                        in.readFully(serializedSchemaManager);
+                        schemaManager =
+                                SchemaManager.SERIALIZER.deserialize(
+                                        schemaManagerSerializerVersion, serializedSchemaManager);
+                        Map<TableId, Set<TableId>> derivationMapping =
+                                SchemaDerivation.deserializerDerivationMapping(in);
+                        schemaDerivation =
+                                new SchemaDerivation(schemaManager, routes, derivationMapping);
+                        requestHandler =
+                                new SchemaRegistryRequestHandler(
+                                        metadataApplier, schemaManager, schemaDerivation);
+                        break;
+                    }
+                default:
+                    throw new IOException(
+                            "Unrecognized serialization version " + schemaManagerSerializerVersion);
+            }
         }
     }
 
