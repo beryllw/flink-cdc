@@ -168,7 +168,7 @@ public class StarRocksPipelineITCase extends StarRocksSinkTestBase {
                         .getSink();
         stream.sinkTo(starRocksSink);
 
-        env.execute("Values to StarRocks Sink");
+        env.execute("Values to StarRocks Sink test");
 
         List<String> actual = fetchTableContent(tableId, 3);
         List<String> expected = Arrays.asList("17 | 6.28 | StarRocks", "21 | 1.732 | Disenchanted");
