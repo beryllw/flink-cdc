@@ -173,7 +173,6 @@ public class StarRocksPipelineITCase extends StarRocksSinkTestBase {
         List<String> actual = fetchTableContent(tableId, 3);
         List<String> expected = Arrays.asList("17 | 6.28 | StarRocks", "21 | 1.732 | Disenchanted");
 
-
         assertEqualsInAnyOrder(expected, actual);
     }
 }
