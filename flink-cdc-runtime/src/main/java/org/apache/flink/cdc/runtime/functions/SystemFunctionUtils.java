@@ -22,6 +22,7 @@ import org.apache.flink.cdc.common.data.TimestampData;
 import org.apache.flink.cdc.common.data.ZonedTimestampData;
 import org.apache.flink.cdc.common.utils.DateTimeUtils;
 
+import com.jayway.jsonpath.JsonPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -455,6 +456,7 @@ public class SystemFunctionUtils {
     }
 
     // SQL ROUND
+
     /** SQL <code>ROUND</code> operator applied to byte values. */
     public static byte round(byte b0) {
         return round(b0, 0);
@@ -644,5 +646,19 @@ public class SystemFunctionUtils {
             return Boolean.valueOf(castToString(object)) ? "1" : "0";
         }
         return String.valueOf(object);
+    }
+
+    public static String jsonValue(Object object, String pathSpec) {
+        if (object == null) {
+            return null;
+        }
+        return JsonPath.read(object.toString(), pathSpec).toString();
+    }
+
+    public static Boolean jsonExists(Object object, String pathSpec) {
+        if (object == null) {
+            return false;
+        }
+        return JsonPath.read(object.toString(), pathSpec) != null;
     }
 }

@@ -45,6 +45,12 @@ limitations under the License.
             <artifactId>calcite-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>${json-path.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-cdc-common</artifactId>
             <version>${project.version}</version>
@@ -89,6 +95,7 @@ limitations under the License.
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
 </project>

@@ -235,6 +235,20 @@ public class PostTransformOperatorTest {
                     .physicalColumn("square_col2", DataTypes.INT())
                     .primaryKey("col1")
                     .build();
+    private static final TableId JSON_TABLE =
+            TableId.tableId("my_company", "my_branch", "column_json");
+    private static final Schema JSON_SCHEMA =
+            Schema.newBuilder()
+                    .physicalColumn("id", DataTypes.INT())
+                    .physicalColumn("json_col", DataTypes.STRING())
+                    .primaryKey("id")
+                    .build();
+    private static final Schema EXPECTED_JSON_SCHEMA =
+            Schema.newBuilder()
+                    .physicalColumn("id", DataTypes.INT())
+                    .physicalColumn("age", DataTypes.STRING())
+                    .primaryKey("id")
+                    .build();
 
     @Test
     void testDataChangeEventTransform() throws Exception {
@@ -784,6 +798,52 @@ public class PostTransformOperatorTest {
                 .isEqualTo(
                         new StreamRecord<>(
                                 new CreateTableEvent(TIMEZONE_TABLEID, TIMEZONE_SCHEMA)));
+        transform.processElement(new StreamRecord<>(insertEvent));
+        Assertions.assertThat(
+                        transformFunctionEventEventOperatorTestHarness.getOutputRecords().poll())
+                .isEqualTo(new StreamRecord<>(insertEventExpect));
+    }
+
+    @Test
+    void testJsonTransform() throws Exception {
+        PostTransformOperator transform =
+                PostTransformOperator.newBuilder()
+                        .addTransform(
+                                JSON_TABLE.identifier(),
+                                "id, JSON_VALUE(json_col,'$.age') as age",
+                                null)
+                        .addTimezone("UTC")
+                        .build();
+        EventOperatorTestHarness<PostTransformOperator, Event>
+                transformFunctionEventEventOperatorTestHarness =
+                        new EventOperatorTestHarness<>(transform, 1);
+        // Initialization
+        transformFunctionEventEventOperatorTestHarness.open();
+        // Create table
+        CreateTableEvent createTableEvent = new CreateTableEvent(JSON_TABLE, JSON_SCHEMA);
+        BinaryRecordDataGenerator recordDataGenerator =
+                new BinaryRecordDataGenerator(((RowType) JSON_SCHEMA.toRowDataType()));
+        BinaryRecordDataGenerator expectedRecordDataGenerator =
+                new BinaryRecordDataGenerator(((RowType) EXPECTED_JSON_SCHEMA.toRowDataType()));
+        // Insert
+        DataChangeEvent insertEvent =
+                DataChangeEvent.insertEvent(
+                        JSON_TABLE,
+                        recordDataGenerator.generate(
+                                new Object[] {
+                                    new Integer("1"),
+                                    new BinaryStringData("{\"name\":\"jue\",\"age\":30}")
+                                }));
+        DataChangeEvent insertEventExpect =
+                DataChangeEvent.insertEvent(
+                        JSON_TABLE,
+                        expectedRecordDataGenerator.generate(
+                                new Object[] {new Integer("1"), new BinaryStringData("30")}));
+        transform.processElement(new StreamRecord<>(createTableEvent));
+        Assertions.assertThat(
+                        transformFunctionEventEventOperatorTestHarness.getOutputRecords().poll())
+                .isEqualTo(
+                        new StreamRecord<>(new CreateTableEvent(JSON_TABLE, EXPECTED_JSON_SCHEMA)));
         transform.processElement(new StreamRecord<>(insertEvent));
         Assertions.assertThat(
                         transformFunctionEventEventOperatorTestHarness.getOutputRecords().poll())

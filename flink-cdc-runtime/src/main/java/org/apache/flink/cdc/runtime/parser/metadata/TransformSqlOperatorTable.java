@@ -309,4 +309,25 @@ public class TransformSqlOperatorTable extends ReflectiveSqlOperatorTable {
     // Cast Functions
     // --------------
     public static final SqlFunction CAST = SqlStdOperatorTable.CAST;
+
+    // --------------
+    // JSON Functions
+    // --------------
+    public static final SqlFunction JSON_VALUE = SqlStdOperatorTable.JSON_VALUE;
+    public static final SqlFunction JSON_EXISTS = SqlStdOperatorTable.JSON_EXISTS;
+    public static final SqlFunction JSON_QUERY = SqlStdOperatorTable.JSON_QUERY;
+    public static final SqlFunction JSON_OBJECT = SqlStdOperatorTable.JSON_OBJECT;
+    public static final SqlFunction JSON_ARRAY = SqlStdOperatorTable.JSON_ARRAY;
+    public static final SqlPostfixOperator IS_JSON_VALUE = SqlStdOperatorTable.IS_JSON_VALUE;
+    public static final SqlPostfixOperator IS_JSON_OBJECT = SqlStdOperatorTable.IS_JSON_OBJECT;
+    public static final SqlPostfixOperator IS_JSON_ARRAY = SqlStdOperatorTable.IS_JSON_ARRAY;
+    public static final SqlPostfixOperator IS_JSON_SCALAR = SqlStdOperatorTable.IS_JSON_SCALAR;
+    public static final SqlPostfixOperator IS_NOT_JSON_VALUE =
+            SqlStdOperatorTable.IS_NOT_JSON_VALUE;
+    public static final SqlPostfixOperator IS_NOT_JSON_OBJECT =
+            SqlStdOperatorTable.IS_NOT_JSON_OBJECT;
+    public static final SqlPostfixOperator IS_NOT_JSON_ARRAY =
+            SqlStdOperatorTable.IS_NOT_JSON_ARRAY;
+    public static final SqlPostfixOperator IS_NOT_JSON_SCALAR =
+            SqlStdOperatorTable.IS_NOT_JSON_SCALAR;
 }
