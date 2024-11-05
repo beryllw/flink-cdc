@@ -513,7 +513,6 @@ public class PaimonSinkITCase {
                     });
             writer.flush(false);
             // Checkpoint id start from 1
-            long checkpointId = i;
             committer.commit(
                     writer.prepareCommit().stream()
                             .map(this::correctCheckpointId)
