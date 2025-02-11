@@ -266,7 +266,10 @@ public class MySqlDataSourceFactoryTest extends MySqlSourceTestBase {
         Factory.Context context = new MockContext(Configuration.fromMap(options));
         MySqlDataSourceFactory factory = new MySqlDataSourceFactory();
         assertThat(factory.optionalOptions())
-                .contains(TREAT_TINYINT1_AS_BOOLEAN_ENABLED, PARSE_ONLINE_SCHEMA_CHANGES, SCAN_BINLOG_NEWLY_ADDED_TABLE_ENABLED);
+                .contains(
+                        TREAT_TINYINT1_AS_BOOLEAN_ENABLED,
+                        PARSE_ONLINE_SCHEMA_CHANGES,
+                        SCAN_BINLOG_NEWLY_ADDED_TABLE_ENABLED);
 
         MySqlDataSource dataSource = (MySqlDataSource) factory.createDataSource(context);
         assertThat(dataSource.getSourceConfig().isTreatTinyInt1AsBoolean()).isFalse();
