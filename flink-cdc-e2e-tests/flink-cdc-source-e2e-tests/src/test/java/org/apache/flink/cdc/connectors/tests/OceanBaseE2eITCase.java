@@ -175,7 +175,8 @@ public class OceanBaseE2eITCase extends FlinkContainerTestEnvironment {
                         "107,rocks,box of assorted rocks,5.1,null,null",
                         "108,jacket,water resistent black wind breaker,0.1,null,null",
                         "109,spare tire,24 inch spare tire,22.2,null,null",
-                        "110,jacket,new water resistent white wind breaker,0.5,null,null");
+                        "110,jacket,new water resistent white wind breaker,0.5,null,null",
+                        "111,scooter,Big 2-wheel scooter,5.18, null, null");
         proxy.checkResultWithTimeout(
                 expectResult,
                 "ob_products_sink",
