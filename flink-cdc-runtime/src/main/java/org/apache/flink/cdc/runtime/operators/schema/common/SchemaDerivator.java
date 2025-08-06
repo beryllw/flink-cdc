@@ -290,7 +290,9 @@ public class SchemaDerivator {
                                                                         .nullable(),
                                                                 col.getAddColumn().getComment(),
                                                                 col.getAddColumn()
-                                                                        .getDefaultValueExpression())))
+                                                                        .getDefaultValueExpression()),
+                                                        col.getPosition(),
+                                                        col.getExistedColumnName()))
                                 .collect(Collectors.toList())));
     }
 
